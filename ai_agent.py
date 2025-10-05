@@ -7,6 +7,15 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 import warnings
 
+# Add matplotlib imports
+import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use('Agg')  # Use non-interactive backend
+import io
+import base64
+from datetime import datetime, timedelta
+
 warnings.filterwarnings('ignore')
 
 # Initialize Gemini client if provider is set
@@ -41,63 +50,191 @@ def load_stock_data(symbol, data_path="stock_data"):
         return None
 
 
-def enhanced_analyze_with_ml(symbol):
-    """
-    Enhanced ML analysis with technical indicators and predictions
-    """
-    df = load_stock_data(symbol)
-
-    if df is None or len(df) < 30:
-        return {"error": f"Insufficient data for {symbol} or symbol not found"}
-
+# Chart Generation Functions
+def generate_price_chart(df, symbol):
+    """Generate price chart with technical indicators"""
     try:
-        # Calculate technical indicators
-        df = calculate_technical_indicators(df)
+        plt.figure(figsize=(12, 8))
 
-        # Get latest data
-        latest = df.iloc[-1]
-        latest_price = float(latest['Close'])
+        # Plot closing price
+        plt.subplot(2, 1, 1)
+        plt.plot(df['Date'], df['Close'], label='Close Price', linewidth=2, color='blue')
 
-        # Trend analysis
-        trend, slope = calculate_trend(df)
+        # Plot moving averages if available
+        if 'MA_20' in df.columns:
+            plt.plot(df['Date'], df['MA_20'], label='MA 20', linestyle='--', alpha=0.7)
+        if 'MA_50' in df.columns:
+            plt.plot(df['Date'], df['MA_50'], label='MA 50', linestyle='--', alpha=0.7)
 
-        # Volatility
-        volatility = calculate_volatility(df)
+        plt.title(f'{symbol} - Price Chart')
+        plt.ylabel('Price')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
 
-        # Moving averages
-        ma20 = float(df['MA_20'].iloc[-1]) if 'MA_20' in df.columns else None
-        ma50 = float(df['MA_50'].iloc[-1]) if 'MA_50' in df.columns else None
+        # Plot RSI
+        plt.subplot(2, 1, 2)
+        if 'RSI_14' in df.columns:
+            plt.plot(df['Date'], df['RSI_14'], label='RSI', color='purple', linewidth=2)
+            plt.axhline(y=70, color='r', linestyle='--', alpha=0.7, label='Overbought (70)')
+            plt.axhline(y=30, color='g', linestyle='--', alpha=0.7, label='Oversold (30)')
+            plt.axhline(y=50, color='gray', linestyle='--', alpha=0.5)
 
-        # RSI
-        rsi = float(df['RSI_14'].iloc[-1]) if 'RSI_14' in df.columns else None
+        plt.title('RSI Indicator')
+        plt.ylabel('RSI')
+        plt.xlabel('Date')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
 
-        # Generate trading signals
-        signal, confidence = generate_trading_signal(df)
+        plt.tight_layout()
 
-        # Price prediction (simple)
-        prediction = predict_next_price(df)
+        # Convert plot to base64 string
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
 
-        return {
-            "symbol": symbol,
-            "latest_price": latest_price,
-            "trend": trend,
-            "slope": slope,
-            "volatility_annual": volatility,
-            "ma20": ma20,
-            "ma50": ma50,
-            "rsi": rsi,
-            "signal": signal,
-            "confidence": confidence,
-            "prediction": prediction,
-            "data_points": len(df),
-            "last_date": df['Date'].iloc[-1].strftime('%Y-%m-%d'),
-            "analysis_type": "Enhanced Technical Analysis"
-        }
+        plt.close()
+
+        graphic = base64.b64encode(image_png).decode('utf-8')
+        return f"data:image/png;base64,{graphic}"
 
     except Exception as e:
-        return {"error": f"Analysis error for {symbol}: {str(e)}"}
+        print(f"Error generating price chart: {e}")
+        return None
 
 
+def generate_volume_chart(df, symbol):
+    """Generate volume chart"""
+    try:
+        plt.figure(figsize=(12, 4))
+
+        # Plot volume
+        plt.bar(df['Date'], df['Volume'], alpha=0.7, color='orange', label='Volume')
+
+        # Plot volume moving average if available
+        if 'Volume_MA_20' in df.columns:
+            plt.plot(df['Date'], df['Volume_MA_20'], label='Volume MA 20', color='red', linewidth=2)
+
+        plt.title(f'{symbol} - Trading Volume')
+        plt.ylabel('Volume')
+        plt.xlabel('Date')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        # Convert plot to base64 string
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+
+        plt.close()
+
+        graphic = base64.b64encode(image_png).decode('utf-8')
+        return f"data:image/png;base64,{graphic}"
+
+    except Exception as e:
+        print(f"Error generating volume chart: {e}")
+        return None
+
+
+def generate_technical_analysis_charts(df, symbol):
+    """Generate multiple technical analysis charts"""
+    charts = {}
+
+    try:
+        # Price and RSI chart
+        charts['price_rsi'] = generate_price_chart(df.tail(100), symbol)  # Last 100 days
+
+        # Volume chart
+        charts['volume'] = generate_volume_chart(df.tail(100), symbol)
+
+        # MACD chart if available
+        if 'MACD' in df.columns:
+            charts['macd'] = generate_macd_chart(df.tail(100), symbol)
+
+        # Bollinger Bands chart if available
+        if 'BB_Upper' in df.columns and 'BB_Lower' in df.columns:
+            charts['bollinger'] = generate_bollinger_chart(df.tail(100), symbol)
+
+    except Exception as e:
+        print(f"Error generating technical charts: {e}")
+
+    return charts
+
+
+def generate_macd_chart(df, symbol):
+    """Generate MACD chart"""
+    try:
+        plt.figure(figsize=(12, 4))
+
+        plt.plot(df['Date'], df['MACD'], label='MACD', color='blue', linewidth=2)
+        plt.axhline(y=0, color='black', linestyle='-', alpha=0.5)
+
+        plt.title(f'{symbol} - MACD Indicator')
+        plt.ylabel('MACD')
+        plt.xlabel('Date')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+
+        plt.close()
+
+        graphic = base64.b64encode(image_png).decode('utf-8')
+        return f"data:image/png;base64,{graphic}"
+
+    except Exception as e:
+        print(f"Error generating MACD chart: {e}")
+        return None
+
+
+def generate_bollinger_chart(df, symbol):
+    """Generate Bollinger Bands chart"""
+    try:
+        plt.figure(figsize=(12, 4))
+
+        plt.plot(df['Date'], df['Close'], label='Close Price', color='blue', linewidth=2)
+        plt.plot(df['Date'], df['BB_Upper'], label='Upper Band', color='red', linestyle='--', alpha=0.7)
+        plt.plot(df['Date'], df['BB_Lower'], label='Lower Band', color='green', linestyle='--', alpha=0.7)
+
+        # Fill between Bollinger Bands
+        plt.fill_between(df['Date'], df['BB_Upper'], df['BB_Lower'], alpha=0.1, color='gray')
+
+        plt.title(f'{symbol} - Bollinger Bands')
+        plt.ylabel('Price')
+        plt.xlabel('Date')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+
+        plt.close()
+
+        graphic = base64.b64encode(image_png).decode('utf-8')
+        return f"data:image/png;base64,{graphic}"
+
+    except Exception as e:
+        print(f"Error generating Bollinger chart: {e}")
+        return None
+
+
+# Technical Analysis Functions
 def calculate_technical_indicators(df):
     """Calculate comprehensive technical indicators"""
     data = df.copy()
@@ -259,6 +396,68 @@ def predict_next_price(df, days=1):
         "prediction_horizon": f"{days} day",
         "method": "Linear Regression"
     }
+
+
+# Main Analysis Functions
+def enhanced_analyze_with_ml(symbol):
+    """
+    Enhanced ML analysis with technical indicators, predictions, and charts
+    """
+    df = load_stock_data(symbol)
+
+    if df is None or len(df) < 30:
+        return {"error": f"Insufficient data for {symbol} or symbol not found"}
+
+    try:
+        # Calculate technical indicators
+        df = calculate_technical_indicators(df)
+
+        # Generate charts (use last 100 days for better visualization)
+        charts = generate_technical_analysis_charts(df, symbol)
+
+        # Get latest data
+        latest = df.iloc[-1]
+        latest_price = float(latest['Close'])
+
+        # Trend analysis
+        trend, slope = calculate_trend(df)
+
+        # Volatility
+        volatility = calculate_volatility(df)
+
+        # Moving averages
+        ma20 = float(df['MA_20'].iloc[-1]) if 'MA_20' in df.columns else None
+        ma50 = float(df['MA_50'].iloc[-1]) if 'MA_50' in df.columns else None
+
+        # RSI
+        rsi = float(df['RSI_14'].iloc[-1]) if 'RSI_14' in df.columns else None
+
+        # Generate trading signals
+        signal, confidence = generate_trading_signal(df)
+
+        # Price prediction (simple)
+        prediction = predict_next_price(df)
+
+        return {
+            "symbol": symbol,
+            "latest_price": latest_price,
+            "trend": trend,
+            "slope": slope,
+            "volatility_annual": volatility,
+            "ma20": ma20,
+            "ma50": ma50,
+            "rsi": rsi,
+            "signal": signal,
+            "confidence": confidence,
+            "prediction": prediction,
+            "data_points": len(df),
+            "last_date": df['Date'].iloc[-1].strftime('%Y-%m-%d'),
+            "analysis_type": "Enhanced Technical Analysis",
+            "charts": charts  # Add charts to the response
+        }
+
+    except Exception as e:
+        return {"error": f"Analysis error for {symbol}: {str(e)}"}
 
 
 def interactive_gemini_analysis(symbol, user_question=None, analysis_type="comprehensive"):

@@ -1,95 +1,214 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Stock Analysis</h2>
+<div class="container">
+    <h2>Stock Analysis</h2>
 
-<!-- Symbol Input Form -->
-<form method="post" class="mb-4">
-  <label>Symbol: <input name="symbol" value="{{ symbol or '' }}" /></label>
-  <button type="submit">Analyze</button>
-</form>
+    <!-- Symbol Input Form -->
+    <form method="post" class="mb-4">
+        <div class="row">
+            <div class="col-md-8">
+                <input type="text" name="symbol" value="{{ symbol or '' }}" class="form-control" placeholder="Enter stock symbol (e.g., RELIANCE, TCS)">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">Analyze</button>
+            </div>
+        </div>
+    </form>
 
-{% if result %}
-  <h3>Results for {{ symbol }}</h3>
+    {% if result %}
+    <h3>Results for {{ symbol }}</h3>
 
-  <!-- ML Summary -->
-  {% if result.ml %}
-    <div class="card mb-3" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
-      <h4>ML Summary</h4>
-      {% if result.ml.error %}
-        <p style="color:red;">{{ result.ml.error }}</p>
-      {% else %}
-        <ul>
-          <li><strong>Latest Price:</strong> ${{ result.ml.latest_price }}</li>
-          <li><strong>Trend:</strong> {{ result.ml.trend }}</li>
-          <li><strong>Slope:</strong> {{ result.ml.slope | round(4) }}</li>
-          <li><strong>Volatility (annual):</strong> {{ result.ml.volatility_annual | round(4) }}</li>
-          <li><strong>MA20:</strong> {{ result.ml.ma20 | round(2) if result.ml.ma20 else 'N/A' }}</li>
-          <li><strong>MA50:</strong> {{ result.ml.ma50 | round(2) if result.ml.ma50 else 'N/A' }}</li>
-          <li><strong>Signal:</strong> {{ result.ml.signal }}</li>
-          <li><strong>Data Points:</strong> {{ result.ml.data_points }}</li>
-        </ul>
-      {% endif %}
+    <!-- Charts Section -->
+    {% if result.ml and result.ml.charts %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4>📊 Technical Analysis Charts</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% if result.ml.charts.price_rsi %}
+                <div class="col-md-6 mb-4">
+                    <h5>Price & RSI Analysis</h5>
+                    <img src="{{ result.ml.charts.price_rsi }}" alt="Price and RSI Chart" class="img-fluid" style="border: 1px solid #ddd; border-radius: 5px;">
+                    <p class="text-muted mt-2"><small>Upper chart shows price movement with moving averages. Lower chart shows RSI indicator with overbought/oversold levels.</small></p>
+                </div>
+                {% endif %}
+
+                {% if result.ml.charts.volume %}
+                <div class="col-md-6 mb-4">
+                    <h5>Volume Analysis</h5>
+                    <img src="{{ result.ml.charts.volume }}" alt="Volume Chart" class="img-fluid" style="border: 1px solid #ddd; border-radius: 5px;">
+                    <p class="text-muted mt-2"><small>Shows trading volume with 20-day moving average. High volume often confirms price trends.</small></p>
+                </div>
+                {% endif %}
+
+                {% if result.ml.charts.macd %}
+                <div class="col-md-6 mb-4">
+                    <h5>MACD Indicator</h5>
+                    <img src="{{ result.ml.charts.macd }}" alt="MACD Chart" class="img-fluid" style="border: 1px solid #ddd; border-radius: 5px;">
+                    <p class="text-muted mt-2"><small>MACD shows momentum and trend changes. Crossings above/below zero line indicate buy/sell signals.</small></p>
+                </div>
+                {% endif %}
+
+                {% if result.ml.charts.bollinger %}
+                <div class="col-md-6 mb-4">
+                    <h5>Bollinger Bands</h5>
+                    <img src="{{ result.ml.charts.bollinger }}" alt="Bollinger Bands Chart" class="img-fluid" style="border: 1px solid #ddd; border-radius: 5px;">
+                    <p class="text-muted mt-2"><small>Bollinger Bands show volatility and potential support/resistance levels. Price touching bands may indicate reversals.</small></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Gemini Analysis -->
-  {% if result.gemini %}
-    <div class="card mb-3" style="padding: 15px; border: 1px solid #4CAF50; border-radius: 8px; background: #e8f5e9;">
-      <h4>Gemini Analysis</h4>
-      {% if result.gemini.error %}
-        <p style="color:red;">{{ result.gemini.error }}</p>
-      {% else %}
-        {# Handle both old and new Gemini response formats #}
-        {% if result.gemini.analysis %}
-          {# New format from interactive_gemini_analysis #}
-          <p>{{ result.gemini.analysis }}</p>
-          <hr>
-          <h5>Technical Context</h5>
-          <ul>
-            <li><strong>Latest Price:</strong> ${{ result.gemini.ml_context.latest_price }}</li>
-            <li><strong>Trend:</strong> {{ result.gemini.ml_context.trend }}</li>
-            <li><strong>Signal:</strong> {{ result.gemini.ml_context.signal }}</li>
-          </ul>
-        {% elif result.gemini.gemini_text %}
-          {# Old format from analyze_with_gemini #}
-          <p>{{ result.gemini.gemini_text }}</p>
-          <hr>
-          <h5>ML Summary</h5>
-          <ul>
-            <li><strong>Latest Price:</strong> ${{ result.gemini.ml_summary.latest_price }}</li>
-            <li><strong>Trend:</strong> {{ result.gemini.ml_summary.trend }}</li>
-            <li><strong>Signal:</strong> {{ result.gemini.ml_summary.signal }}</li>
-          </ul>
-        {% else %}
-          {# Fallback for any other format #}
-          <p>{{ result.gemini }}</p>
-        {% endif %}
-      {% endif %}
+    <!-- ML Summary -->
+    {% if result.ml %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>🤖 ML Technical Analysis</h4>
+        </div>
+        <div class="card-body">
+            {% if result.ml.error %}
+            <p class="text-danger">{{ result.ml.error }}</p>
+            {% else %}
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Price Analysis</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>Latest Price:</strong> ₹{{ "%.2f"|format(result.ml.latest_price) }}</li>
+                        <li><strong>Trend:</strong>
+                            <span class="badge {% if 'Up' in result.ml.trend %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ result.ml.trend }}
+                            </span>
+                        </li>
+                        <li><strong>Slope:</strong> {{ result.ml.slope | round(4) }}</li>
+                        <li><strong>Volatility (annual):</strong> {{ result.ml.volatility_annual | round(4) }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Technical Indicators</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>MA20:</strong> {{ result.ml.ma20 | round(2) if result.ml.ma20 else 'N/A' }}</li>
+                        <li><strong>MA50:</strong> {{ result.ml.ma50 | round(2) if result.ml.ma50 else 'N/A' }}</li>
+                        <li><strong>RSI:</strong>
+                            {% if result.ml.rsi %}
+                                <span class="{% if result.ml.rsi < 30 %}text-success{% elif result.ml.rsi > 70 %}text-danger{% endif %}">
+                                    {{ result.ml.rsi | round(2) }}
+                                </span>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </li>
+                        <li><strong>Signal:</strong>
+                            <span class="badge {% if result.ml.signal == 'BUY' %}bg-success{% elif result.ml.signal == 'SELL' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ result.ml.signal }} ({{ result.ml.confidence }})
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if result.ml.prediction and result.ml.prediction.predicted_price %}
+            <div class="alert alert-info mt-3">
+                <h6>📈 Price Prediction</h6>
+                <strong>Next Day:</strong> ₹{{ "%.2f"|format(result.ml.prediction.predicted_price) }}
+                ({{ "%+.2f"|format(result.ml.prediction.predicted_change_percent) }}%)
+                <br><small>Method: {{ result.ml.prediction.method }} | Based on {{ result.ml.data_points }} data points</small>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Gemini Analysis -->
+    {% if result.gemini %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h4>🧠 AI Analysis (Gemini)</h4>
+        </div>
+        <div class="card-body">
+            {% if result.gemini.error %}
+            <p class="text-danger">{{ result.gemini.error }}</p>
+            {% else %}
+            {# Handle both old and new Gemini response formats #}
+            {% if result.gemini.analysis %}
+            {# New format from interactive_gemini_analysis #}
+            <div class="gemini-analysis">
+                {{ result.gemini.analysis }}
+            </div>
+            <hr>
+            <h5>Technical Context</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Latest Price:</strong> ₹{{ result.gemini.ml_context.latest_price }}</li>
+                        <li><strong>Trend:</strong> {{ result.gemini.ml_context.trend }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Signal:</strong> {{ result.gemini.ml_context.signal }}</li>
+                        <li><strong>Analysis Date:</strong> {{ result.gemini.timestamp }}</li>
+                    </ul>
+                </div>
+            </div>
+            {% elif result.gemini.gemini_text %}
+            {# Old format from analyze_with_gemini #}
+            <div class="gemini-analysis">
+                {{ result.gemini.gemini_text }}
+            </div>
+            <hr>
+            <h5>ML Summary</h5>
+            <ul>
+                <li><strong>Latest Price:</strong> ₹{{ result.gemini.ml_summary.latest_price }}</li>
+                <li><strong>Trend:</strong> {{ result.gemini.ml_summary.trend }}</li>
+                <li><strong>Signal:</strong> {{ result.gemini.ml_summary.signal }}</li>
+            </ul>
+            {% else %}
+            {# Fallback for any other format #}
+            <p>{{ result.gemini }}</p>
+            {% endif %}
+            {% endif %}
+        </div>
     </div>
 
     <!-- Interactive Q&A Form -->
-    <div class="card mb-3" style="padding: 15px; border: 1px solid #2196F3; border-radius: 8px; background: #e3f2fd;">
-      <h4>Ask Gemini a Question</h4>
-      <form id="ask-gemini-form">
-        <input type="hidden" name="symbol" value="{{ symbol }}">
-        <textarea name="question" rows="3" style="width: 100%;" placeholder="Ask anything about {{ symbol }}"></textarea>
-        <button type="submit" class="mt-2">Ask Gemini</button>
-      </form>
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4>💬 Ask Gemini a Question</h4>
+        </div>
+        <div class="card-body">
+            <form id="ask-gemini-form">
+                <input type="hidden" name="symbol" value="{{ symbol }}">
+                <div class="mb-3">
+                    <label class="form-label">Your Question:</label>
+                    <textarea name="question" class="form-control" rows="3" placeholder="Ask anything about {{ symbol }} analysis, charts, or trading strategy..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-outline-primary">Ask Gemini</button>
+            </form>
 
-      {% if gemini_reply %}
-        <hr>
-        <strong>Gemini says:</strong>
-        <p>{{ gemini_reply.analysis if gemini_reply.analysis else gemini_reply }}</p>
-      {% endif %}
+            {% if gemini_reply %}
+            <div class="alert alert-info mt-3">
+                <strong>Gemini says:</strong>
+                <div class="gemini-analysis mt-2">
+                    {{ gemini_reply.analysis if gemini_reply.analysis else gemini_reply }}
+                </div>
+            </div>
+            {% endif %}
 
-      <div id="gemini-response" class="mt-3" style="display: none;">
-        <hr>
-        <strong>Gemini says:</strong>
-        <div id="response-content"></div>
-      </div>
+            <div id="gemini-response" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                    <strong>Gemini says:</strong>
+                    <div id="response-content" class="gemini-analysis mt-2"></div>
+                </div>
+            </div>
+        </div>
     </div>
-  {% endif %}
-{% endif %}
+    {% endif %}
+    {% endif %}
+</div>
 
 <script>
 // Interactive Gemini question handler
@@ -109,7 +228,7 @@ document.getElementById('ask-gemini-form').addEventListener('submit', async func
     const contentDiv = document.getElementById('response-content');
 
     // Show loading
-    contentDiv.innerHTML = '🔄 Thinking...';
+    contentDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><br>Thinking...</div>';
     responseDiv.style.display = 'block';
 
     try {
@@ -127,20 +246,38 @@ document.getElementById('ask-gemini-form').addEventListener('submit', async func
         const data = await response.json();
 
         if (data.error) {
-            contentDiv.innerHTML = `❌ Error: ${data.error}`;
+            contentDiv.innerHTML = `<div class="text-danger">❌ Error: ${data.error}</div>`;
         } else {
             contentDiv.innerHTML = data.analysis.replace(/\n/g, '<br>');
         }
     } catch (error) {
-        contentDiv.innerHTML = `❌ Network error: ${error.message}`;
+        contentDiv.innerHTML = `<div class="text-danger">❌ Network error: ${error.message}</div>`;
     }
 });
 </script>
 
 <style>
+.gemini-analysis {
+    line-height: 1.6;
+    font-size: 1.05em;
+    white-space: pre-wrap;
+}
+.badge {
+    font-size: 0.8em;
+    padding: 4px 8px;
+}
 .card {
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: none;
+    border-radius: 10px;
+}
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: 600;
+}
+.alert {
+    border: none;
+    border-radius: 8px;
 }
 </style>
 {% endblock %}
