@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Stock: {{ symbol }}</h2>
+<p>Current price: {{ price }}</p>
+
+<h3>ML Analysis</h3>
+{% if ml %}
+  {% if ml.error %}
+    <p>{{ ml.error }}</p>
+  {% else %}
+    <ul>
+      <li>Latest price: {{ ml.latest_price }}</li>
+      <li>Trend: {{ ml.trend }}</li>
+      <li>Volatility (annual): {{ ml.volatility_annual }}</li>
+      <li>MA20: {{ ml.ma20 }}</li>
+      <li>MA50: {{ ml.ma50 }}</li>
+      <li>Signal: {{ ml.signal }}</li>
+      <li>Data points: {{ ml.data_points }}</li>
+    </ul>
+  {% endif %}
+{% endif %}
+
+{% if gemini %}
+  <h3>Gemini Analysis (if enabled)</h3>
+  {% if gemini is string %}
+    <p>{{ gemini }}</p>
+  {% else %}
+    <ul>
+      {% for item in gemini %}
+        <li><strong>{{ item.key }}:</strong> {{ item.value }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endif %}
+
+<form method="get" action="/stocks">
+  <label>Search symbol: <input name="q" /></label>
+  <button type="submit">Search</button>
+</form>
+
+<h3>Finance News</h3>
+{% if news %}
+  <div class="news-cards">
+    {% for article in news %}
+      <div class="news-card">
+        <a href="{{ article.url }}" target="_blank">
+          <img src="{{ article.urlToImage }}" alt="News image"/>
+          <div class="news-content">
+            <h4>{{ article.title }}</h4>
+            <p>{{ article.description or '' }}</p>
+            <small>Source: {{ article.source.name }} | {{ article.publishedAt[:10] }}</small>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

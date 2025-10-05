@@ -1,0 +1,10 @@
+Flask
+pymongo
+python-dotenv
+werkzeug
+yfinance
+pandas
+requests
+scikit-learn
+numpy
+flask-bcrypt

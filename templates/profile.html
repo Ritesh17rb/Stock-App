@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Profile</h2>
+{% if user %}
+  <p><strong>Name:</strong> {{ user.name }}</p>
+  <p><strong>Email:</strong> {{ user.email }}</p>
+  <p><strong>Meta:</strong> {{ user.meta }}</p>
+  {% if user.avatar %}<p><img src="{{ user.avatar }}" width="120"/></p>{% endif %}
+{% endif %}
+<h3>Edit</h3>
+<form action="/profile/edit" method="post" enctype="multipart/form-data">
+  <label>Name: <input name="name" value="{{ user.name }}"/></label><br/>
+  <label>Meta: <input name="meta" value="{{ user.meta }}"/></label><br/>
+  <label>Avatar: <input type="file" name="avatar" /></label><br/>
+  <label>New password: <input type="password" name="password" /></label><br/>
+  <button type="submit">Save</button>
+</form>
+<form action="/profile/delete" method="post" onsubmit="return confirm('Delete account?');">
+  <button type="submit">Delete Account</button>
+</form>
+{% endblock %}

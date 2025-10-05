@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Portfolio</h2>
+{% if positions %}
+  <table border="1" cellpadding="6">
+    <tr><th>Symbol</th><th>Qty</th><th>Avg Price</th><th>Current Price</th></tr>
+    {% for p in positions %}
+      <tr>
+        <td>{{ p.symbol }}</td>
+        <td>{{ p.qty }}</td>
+        <td>{{ p.avg_price }}</td>
+        <td>{{ p.current_price }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>No positions yet.</p>
+{% endif %}
+<h3>Add position</h3>
+<form action="/portfolio/add" method="post">
+  <label>Symbol: <input name="symbol" /></label><br/>
+  <label>Qty: <input name="qty" /></label><br/>
+  <label>Avg price: <input name="avg_price" /></label><br/>
+  <button type="submit">Add</button>
+</form>
+{% endblock %}

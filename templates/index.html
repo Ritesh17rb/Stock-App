@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Welcome to StockApp</h2>
+
+<h3>Latest Finance & Stock News</h3>
+{% if news %}
+  <div class="news-cards">
+    {% for article in news %}
+      <div class="news-card">
+        <a href="{{ article.url }}" target="_blank">
+          <img src="{{ article.urlToImage }}" alt="News image"/>
+          <div class="news-content">
+            <h4>{{ article.title }}</h4>
+            <p>{{ article.description or '' }}</p>
+            <small>Source: {{ article.source.name }} | {{ article.publishedAt[:10] }}</small>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p>No news available at the moment.</p>
+{% endif %}
+{% endblock %}

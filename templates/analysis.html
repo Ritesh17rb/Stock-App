@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Stock Analysis</h2>
+
+<!-- Symbol Input Form -->
+<form method="post" class="mb-4">
+  <label>Symbol: <input name="symbol" value="{{ symbol or '' }}" /></label>
+  <button type="submit">Analyze</button>
+</form>
+
+{% if result %}
+  <h3>Results for {{ symbol }}</h3>
+
+  <!-- ML Summary -->
+  {% if result.ml %}
+    <div class="card mb-3" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
+      <h4>ML Summary</h4>
+      {% if result.ml.error %}
+        <p style="color:red;">{{ result.ml.error }}</p>
+      {% else %}
+        <ul>
+          <li><strong>Latest Price:</strong> ${{ result.ml.latest_price }}</li>
+          <li><strong>Trend:</strong> {{ result.ml.trend }}</li>
+          <li><strong>Slope:</strong> {{ result.ml.slope | round(4) }}</li>
+          <li><strong>Volatility (annual):</strong> {{ result.ml.volatility_annual | round(4) }}</li>
+          <li><strong>MA20:</strong> {{ result.ml.ma20 | round(2) if result.ml.ma20 else 'N/A' }}</li>
+          <li><strong>MA50:</strong> {{ result.ml.ma50 | round(2) if result.ml.ma50 else 'N/A' }}</li>
+          <li><strong>Signal:</strong> {{ result.ml.signal }}</li>
+          <li><strong>Data Points:</strong> {{ result.ml.data_points }}</li>
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Gemini Analysis -->
+  {% if result.gemini %}
+    <div class="card mb-3" style="padding: 15px; border: 1px solid #4CAF50; border-radius: 8px; background: #e8f5e9;">
+      <h4>Gemini Analysis</h4>
+      {% if result.gemini.error %}
+        <p style="color:red;">{{ result.gemini.error }}</p>
+      {% else %}
+        <p>{{ result.gemini.gemini_text }}</p>
+        <hr>
+        <h5>ML Summary (from Gemini)</h5>
+        <ul>
+          <li><strong>Latest Price:</strong> ${{ result.gemini.ml_summary.latest_price }}</li>
+          <li><strong>Trend:</strong> {{ result.gemini.ml_summary.trend }}</li>
+          <li><strong>Signal:</strong> {{ result.gemini.ml_summary.signal }}</li>
+        </ul>
+      {% endif %}
+    </div>
+
+    <!-- Interactive Q&A Form -->
+    <div class="card mb-3" style="padding: 15px; border: 1px solid #2196F3; border-radius: 8px; background: #e3f2fd;">
+      <h4>Ask Gemini a Question</h4>
+      <form method="post" action="{{ url_for('stocks.ask_gemini') }}">
+        <input type="hidden" name="symbol" value="{{ symbol }}">
+        <textarea name="question" rows="3" style="width: 100%;" placeholder="Ask anything about {{ symbol }}"></textarea>
+        <button type="submit" class="mt-2">Ask</button>
+      </form>
+
+      {% if gemini_reply %}
+        <hr>
+        <strong>Gemini says:</strong>
+        <p>{{ gemini_reply }}</p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}
