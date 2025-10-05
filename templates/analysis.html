@@ -39,32 +39,108 @@
       {% if result.gemini.error %}
         <p style="color:red;">{{ result.gemini.error }}</p>
       {% else %}
-        <p>{{ result.gemini.gemini_text }}</p>
-        <hr>
-        <h5>ML Summary (from Gemini)</h5>
-        <ul>
-          <li><strong>Latest Price:</strong> ${{ result.gemini.ml_summary.latest_price }}</li>
-          <li><strong>Trend:</strong> {{ result.gemini.ml_summary.trend }}</li>
-          <li><strong>Signal:</strong> {{ result.gemini.ml_summary.signal }}</li>
-        </ul>
+        {# Handle both old and new Gemini response formats #}
+        {% if result.gemini.analysis %}
+          {# New format from interactive_gemini_analysis #}
+          <p>{{ result.gemini.analysis }}</p>
+          <hr>
+          <h5>Technical Context</h5>
+          <ul>
+            <li><strong>Latest Price:</strong> ${{ result.gemini.ml_context.latest_price }}</li>
+            <li><strong>Trend:</strong> {{ result.gemini.ml_context.trend }}</li>
+            <li><strong>Signal:</strong> {{ result.gemini.ml_context.signal }}</li>
+          </ul>
+        {% elif result.gemini.gemini_text %}
+          {# Old format from analyze_with_gemini #}
+          <p>{{ result.gemini.gemini_text }}</p>
+          <hr>
+          <h5>ML Summary</h5>
+          <ul>
+            <li><strong>Latest Price:</strong> ${{ result.gemini.ml_summary.latest_price }}</li>
+            <li><strong>Trend:</strong> {{ result.gemini.ml_summary.trend }}</li>
+            <li><strong>Signal:</strong> {{ result.gemini.ml_summary.signal }}</li>
+          </ul>
+        {% else %}
+          {# Fallback for any other format #}
+          <p>{{ result.gemini }}</p>
+        {% endif %}
       {% endif %}
     </div>
 
     <!-- Interactive Q&A Form -->
     <div class="card mb-3" style="padding: 15px; border: 1px solid #2196F3; border-radius: 8px; background: #e3f2fd;">
       <h4>Ask Gemini a Question</h4>
-      <form method="post" action="{{ url_for('stocks.ask_gemini') }}">
+      <form id="ask-gemini-form">
         <input type="hidden" name="symbol" value="{{ symbol }}">
         <textarea name="question" rows="3" style="width: 100%;" placeholder="Ask anything about {{ symbol }}"></textarea>
-        <button type="submit" class="mt-2">Ask</button>
+        <button type="submit" class="mt-2">Ask Gemini</button>
       </form>
 
       {% if gemini_reply %}
         <hr>
         <strong>Gemini says:</strong>
-        <p>{{ gemini_reply }}</p>
+        <p>{{ gemini_reply.analysis if gemini_reply.analysis else gemini_reply }}</p>
       {% endif %}
+
+      <div id="gemini-response" class="mt-3" style="display: none;">
+        <hr>
+        <strong>Gemini says:</strong>
+        <div id="response-content"></div>
+      </div>
     </div>
   {% endif %}
 {% endif %}
+
+<script>
+// Interactive Gemini question handler
+document.getElementById('ask-gemini-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const question = formData.get('question');
+    const symbol = formData.get('symbol');
+
+    if (!question.trim()) {
+        alert('Please enter a question');
+        return;
+    }
+
+    const responseDiv = document.getElementById('gemini-response');
+    const contentDiv = document.getElementById('response-content');
+
+    // Show loading
+    contentDiv.innerHTML = '🔄 Thinking...';
+    responseDiv.style.display = 'block';
+
+    try {
+        const response = await fetch('/api/ask-gemini', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                symbol: symbol,
+                question: question
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            contentDiv.innerHTML = `❌ Error: ${data.error}`;
+        } else {
+            contentDiv.innerHTML = data.analysis.replace(/\n/g, '<br>');
+        }
+    } catch (error) {
+        contentDiv.innerHTML = `❌ Network error: ${error.message}`;
+    }
+});
+</script>
+
+<style>
+.card {
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
 {% endblock %}
