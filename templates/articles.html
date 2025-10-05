@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Finance & Stock Articles</h2>
+<a href="{{ url_for('articles.create') }}" class="post-article-btn">Post New Article</a>
+
+<ul class="articles-list">
+  {% for article in articles %}
+    <li class="article-preview">
+      <a href="{{ url_for('articles.view', article_id=article._id) }}">
+        <h3>{{ article.title }}</h3>
+        <p>{{ article.content[:100] }}{% if article.content|length > 100 %}...{% endif %}</p>
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="full-article">
+  <h2>{{ article.title }}</h2>
+
+  {% if article.image_url %}
+    <img src="{{ article.image_url }}" alt="Article image" class="article-image"/>
+  {% endif %}
+
+  <p>{{ article.content }}</p>
+
+  <small>By: {{ article.author_name or "Unknown" }} | Likes: {{ article.likes }} | Dislikes: {{ article.dislikes }}</small>
+
+  <div class="article-actions">
+    <a href="{{ url_for('articles.like', article_id=article._id_str) }}">👍 Like</a> |
+    <a href="{{ url_for('articles.dislike', article_id=article._id_str) }}">👎 Dislike</a>
+    {% if session.get('user_id') == article.user_id %}
+      | <a href="{{ url_for('articles.delete', article_id=article._id_str) }}">🗑️ Delete</a>
+    {% endif %}
+  </div>
+
+  <a href="{{ url_for('articles.list_articles') }}" class="back-link">← Back to Articles</a>
+</div>
+{% endblock %}

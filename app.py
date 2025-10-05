@@ -4,6 +4,8 @@ from config import Config
 from blueprints.auth import auth
 from blueprints.profile import profile
 from blueprints.stocks import stocks
+from blueprints.articles import articles_bp
+
 import os
 
 def create_app():
@@ -14,6 +16,7 @@ def create_app():
     app.register_blueprint(auth)
     app.register_blueprint(profile)
     app.register_blueprint(stocks)
+    app.register_blueprint(articles_bp)
 
     @app.route("/")
     def index():
